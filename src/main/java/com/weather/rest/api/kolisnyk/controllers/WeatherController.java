@@ -33,6 +33,13 @@ import static com.weather.rest.api.kolisnyk.model.CustomLocalDateTimeFormatters.
  * Class WeatherController is responsible for
  * storing the main fields and methods
  * of the model of this application
+ *
+ * examples:
+ * http://localhost:9345/my-api/weather-by-date?serviceName=weatherAPI&location=kiev,ukr&date=2021-03-20&contextType=json&output=show
+ * http://localhost:9345/my-api/current-weather?serviceName=aerisWeather&location=kiev,ukr&date=2021-03-20&contextType=xml
+ * http://localhost:9345/my-api/current-weather?serviceName=aerisWeather&location=kiev,ukr&date=2021-03-20&contextType=xml&output=save
+ * http://localhost:9345/my-api/current-weather?serviceName=visualCrossingWeather&location=kiev,ukr&date=2021-03-27
+ * http://localhost:9345/my-api/current-weather?serviceName=visualCrossingWeather&location=london,uk&date=2021-03-27
  */
 
 @RestController
