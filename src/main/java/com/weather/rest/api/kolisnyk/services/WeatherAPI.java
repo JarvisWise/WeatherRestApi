@@ -1,6 +1,6 @@
 package com.weather.rest.api.kolisnyk.services;
 
-import com.weather.rest.api.kolisnyk.controllers.WeatherController;
+import com.weather.rest.api.kolisnyk.controllers.AbstractController;
 import com.weather.rest.api.kolisnyk.custom.exceptions.UnexpectedResponseException;
 import com.weather.rest.api.kolisnyk.custom.exceptions.WrongLocationException;
 import com.weather.rest.api.kolisnyk.model.CreateWeatherByService;
@@ -25,7 +25,7 @@ import java.util.concurrent.Future;
 public class WeatherAPI implements WeatherService {
 
     private final static int MAX_FORECAST_DAYS = 2;
-    private final static String SERVICE_NAME = "weatherAPI";
+    public final static String SERVICE_NAME = "weatherAPI";
 
     @Override
     public String getServiceName() {
@@ -51,7 +51,7 @@ public class WeatherAPI implements WeatherService {
     @Override
     public Weather getCurrentWeather(String location) throws IOException, WrongLocationException, UnexpectedResponseException {
 
-        AsyncHttpClient client = new DefaultAsyncHttpClient(WeatherController.config);
+        AsyncHttpClient client = new DefaultAsyncHttpClient(AbstractController.config);
         Future<Response> fresp = client.prepareGet("https://weatherapi-com.p.rapidapi.com/current.json?q=" + location)
                 .setHeader("x-rapidapi-key", WeatherAppProperties.API_KEY)
                 .setHeader("x-rapidapi-host", "weatherapi-com.p.rapidapi.com")
@@ -82,7 +82,7 @@ public class WeatherAPI implements WeatherService {
     @Override
     public Weather getWeatherByDate(LocalDate dateTime, String location) throws IOException, WrongLocationException, UnexpectedResponseException {
 
-        AsyncHttpClient client = new DefaultAsyncHttpClient(WeatherController.config);
+        AsyncHttpClient client = new DefaultAsyncHttpClient(AbstractController.config);
         Future<Response> fresp = client.prepareGet("https://weatherapi-com.p.rapidapi.com/forecast.json?q=" + location + "&days=3")
                 .setHeader("x-rapidapi-key", WeatherAppProperties.API_KEY)
                 .setHeader("x-rapidapi-host", "weatherapi-com.p.rapidapi.com")

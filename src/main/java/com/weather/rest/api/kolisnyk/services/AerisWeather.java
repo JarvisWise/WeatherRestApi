@@ -1,6 +1,6 @@
 package com.weather.rest.api.kolisnyk.services;
 
-import com.weather.rest.api.kolisnyk.controllers.WeatherController;
+import com.weather.rest.api.kolisnyk.controllers.AbstractController;
 import com.weather.rest.api.kolisnyk.custom.exceptions.UnexpectedResponseException;
 import com.weather.rest.api.kolisnyk.custom.exceptions.WrongLocationException;
 import com.weather.rest.api.kolisnyk.model.CreateWeatherByService;
@@ -26,7 +26,7 @@ import java.util.concurrent.Future;
 public class AerisWeather implements WeatherService {
 
     private final static int MAX_FORECAST_DAYS = 12;
-    private final static String SERVICE_NAME = "aerisWeather";
+    public final static String SERVICE_NAME = "aerisWeather";
 
     @Override
     public String getServiceName() {
@@ -71,7 +71,7 @@ public class AerisWeather implements WeatherService {
 
         DateTimeFormatter formatterTimeWrite = DateTimeFormatter.ofPattern("yyyy-MM-dd");
         String localDateString = dateTime.format(formatterTimeWrite);
-        AsyncHttpClient client = new DefaultAsyncHttpClient(WeatherController.config);
+        AsyncHttpClient client = new DefaultAsyncHttpClient(AbstractController.config);
         Future<Response> fresp = client.prepareGet("https://aerisweather1.p.rapidapi.com/forecasts/" +
                 location + "?from=" + localDateString + "&to=" + localDateString)
                 .setHeader("x-rapidapi-key", WeatherAppProperties.API_KEY)
