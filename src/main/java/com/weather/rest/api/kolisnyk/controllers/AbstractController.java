@@ -7,7 +7,6 @@ import com.weather.rest.api.kolisnyk.custom.exceptions.UnexpectedResponseExcepti
 import com.weather.rest.api.kolisnyk.custom.exceptions.WrongLocationException;
 import com.weather.rest.api.kolisnyk.model.MSWordModel;
 import com.weather.rest.api.kolisnyk.model.Weather;
-import com.weather.rest.api.kolisnyk.model.WeatherAppProperties;
 import com.weather.rest.api.kolisnyk.services.WeatherService;
 import org.apache.log4j.Logger;
 import org.apache.xmlbeans.XmlException;
@@ -20,52 +19,34 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
 
-import java.io.*;
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
-import java.util.List;
 
 import static com.weather.rest.api.kolisnyk.model.CustomLocalDateTimeFormatters.mainDateFormatter;
 
 /**
- * Class WeatherController is responsible for
+ * Class AbstractController is responsible for
  * storing the main fields and methods
  * of the model of this application
- *
- * examples:
- * http://localhost:9345/my-api/weather-by-date?serviceName=weatherAPI&location=kiev,ukr&date=2021-03-20&contextType=json&output=show
- * http://localhost:9345/my-api/current-weather?serviceName=aerisWeather&location=kiev,ukr&date=2021-03-20&contextType=xml
- * http://localhost:9345/my-api/current-weather?serviceName=aerisWeather&location=kiev,ukr&date=2021-03-20&contextType=xml&output=save
- * http://localhost:9345/my-api/current-weather?serviceName=visualCrossingWeather&location=kiev,ukr&date=2021-03-27
- * http://localhost:9345/my-api/current-weather?serviceName=visualCrossingWeather&location=london,uk&date=2021-03-27
  */
 
-@RestController
-@RequestMapping(path = "/my-api")
-public class WeatherController {
+public abstract class AbstractController {
 
-    private final List<WeatherService> weatherServiceList;
-    public static final Logger log = Logger.getLogger(WeatherController.class);
+    public static final Logger log = Logger.getLogger(AbstractController.class);
 
+    private WeatherService weatherService;
 
-    public WeatherController(List<WeatherService> weatherServiceList) {
-        this.weatherServiceList = weatherServiceList;
+    public AbstractController(WeatherService weatherService) {
+        this.weatherService = weatherService;
     }
-
-    public static AsyncHttpClientConfig config = new DefaultAsyncHttpClientConfig.Builder()
-            .setMaxConnections(WeatherAppProperties.MAX_CONNECTION)
-            .setRequestTimeout(WeatherAppProperties.REQUEST_TIMEOUT)
-            .setConnectTimeout(WeatherAppProperties.CONNECTION_TIMEOUT)
-            .setReadTimeout(WeatherAppProperties.READ_TIMEOUT)
-            .build();
 
     /**
      * This method responsible for returning
      * current weather data at correct format
      *
-     * @param serviceName serviceName chosen by user
      * @param contextType format for returned data (xml or json)
      * @param location    location of the city for which you want to get a weather data
      *                    (example - london,uk)
@@ -77,51 +58,42 @@ public class WeatherController {
      */
 
     @RequestMapping(path = "/current-weather")
-    public ResponseEntity<?> currentWeather(@RequestParam(value = "serviceName", defaultValue = "aerisWeather") String serviceName,
-                                            @RequestParam(value = "contextType", defaultValue = "json") String contextType,
+    public ResponseEntity<?> currentWeather(@RequestParam(value = "contextType", defaultValue = "json") String contextType,
                                             @RequestParam(value = "location", defaultValue = "london,uk") String location,
                                             @RequestParam(value = "output", defaultValue = "show") String output) {
 
         log.info("A request was made to display the current weather");
-        for (WeatherService temp : weatherServiceList) {
-            if (temp.getServiceName().equals(serviceName)) {
-                try {
-                    Weather responseWeather = temp.getCurrentWeather(location);
-                    String correctFormat = toRightFormat(responseWeather, contextType);
-                    return toRightOutput(serviceName, correctFormat, output, contextType);
-                } catch (JsonProcessingException e) {
-                    log.warn("Unexpected problems with parse data to right format", e);
-                    return new ResponseEntity("Unexpected problems with parse data to right format," +
-                            " please choose other format or try again later", HttpStatus.BAD_REQUEST);
-                } catch (IllegalArgumentException e) {
-                    log.warn("Wrong result type entered:" + contextType, e);
-                    return new ResponseEntity("Wrong result type: " + contextType + ". Try json or xml", HttpStatus.NOT_FOUND);
-                } catch (IOException e) {
-                    log.warn("A request was made to display the weather by date and failed", e);
-                    return new ResponseEntity("Weather service failed: " + e.getMessage() +
-                            ". Please try other service or try later", HttpStatus.BAD_REQUEST);
-                } catch (UnexpectedResponseException e) {
-                    log.warn("Response reading failed", e);
-                    return new ResponseEntity("Weather service response reading failed: " + e.getMessage() +
-                            ". Please try other service or try later", HttpStatus.BAD_REQUEST);
-                } catch (WrongLocationException e) {
-                    log.warn("Wrong location entered", e);
-                    return new ResponseEntity("Wrong location: " + location +
-                            "or this service cannot return weather data for this city. " +
-                            "Please try enter city at right format(Example: london,uk)", HttpStatus.NOT_FOUND);
-                }
-            }
+        try {
+            Weather responseWeather = weatherService.getCurrentWeather(location);
+            String correctFormat = toRightFormat(responseWeather, contextType);
+            return toRightOutput(weatherService.getServiceName(), correctFormat, output, contextType);
+        } catch (JsonProcessingException e) {
+            log.warn("Unexpected problems with parse data to right format", e);
+            return new ResponseEntity("Unexpected problems with parse data to right format," +
+                    " please choose other format or try again later", HttpStatus.BAD_REQUEST);
+        } catch (IllegalArgumentException e) {
+            log.warn("Wrong result type entered:" + contextType, e);
+            return new ResponseEntity("Wrong result type: " + contextType + ". Try json or xml", HttpStatus.NOT_FOUND);
+        } catch (IOException e) {
+            log.warn("A request was made to display the weather by date and failed", e);
+            return new ResponseEntity("Weather service failed: " + e.getMessage() +
+                    ". Please try other service or try later", HttpStatus.BAD_REQUEST);
+        } catch (UnexpectedResponseException e) {
+            log.warn("Response reading failed", e);
+            return new ResponseEntity("Weather service response reading failed: " + e.getMessage() +
+                    ". Please try other service or try later", HttpStatus.BAD_REQUEST);
+        } catch (WrongLocationException e) {
+            log.warn("Wrong location entered", e);
+            return new ResponseEntity("Wrong location: " + location +
+                    "or this service cannot return weather data for this city. " +
+                    "Please try enter city at right format(Example: london,uk)", HttpStatus.NOT_FOUND);
         }
-        log.warn("Wrong service name: " + serviceName);
-        return new ResponseEntity("Wrong service name: " + serviceName +
-                ". Please try one of valid service name: " + weatherServiceList.toString(), HttpStatus.NOT_FOUND);
     }
 
     /**
      * This method responsible for returning
      * current weather data at correct format
      *
-     * @param serviceName serviceName chosen by user
      * @param contextType format for returned data (xml or json)
      * @param location    location of the city for which you want to get a weather data
      * @param output      format for displaying the received data
@@ -133,14 +105,13 @@ public class WeatherController {
      */
 
     @RequestMapping(path = "/weather-by-date")
-    public ResponseEntity<?> weatherByDate(@RequestParam(value = "serviceName", defaultValue = "aerisWeather") String serviceName,
-                                           @RequestParam(value = "contextType", defaultValue = "json") String contextType,
+    public ResponseEntity<?> weatherByDate(@RequestParam(value = "contextType", defaultValue = "json") String contextType,
                                            @RequestParam(value = "date", defaultValue = "current") String date,
                                            @RequestParam(value = "location", defaultValue = "london,uk") String location,
                                            @RequestParam(value = "output", defaultValue = "show") String output) {
 
         if ("current".equals(date)) {
-            return currentWeather(serviceName, contextType, location, output);
+            return currentWeather(contextType, location, output);
         }
 
         LocalDate formattedDate;
@@ -156,45 +127,37 @@ public class WeatherController {
         }
 
         log.info("A request was made to display the weather by date");
-        for (WeatherService temp : weatherServiceList) {
-            if (temp.getServiceName().equals(serviceName)) {
-
-                if (ChronoUnit.DAYS.between(LocalDate.now(), formattedDate) > temp.getMaxNumberOfForecastDays()) {
-                    log.info("Date in the distant future");
-                    return new ResponseEntity("Date in the distant future: " + formattedDate +
-                            ".Please try date between current day and next" + temp.getMaxNumberOfForecastDays() +
-                            "days.", HttpStatus.NOT_FOUND);
-                }
-
-                try {
-                    Weather responseWeather = temp.getWeatherByDate(formattedDate, location);
-                    String correctFormat = toRightFormat(responseWeather, contextType);
-                    return toRightOutput(serviceName, correctFormat, output, contextType);
-                } catch (JsonProcessingException e) {
-                    log.warn("Unexpected problems with parse data to right format", e);
-                    return new ResponseEntity("Unexpected problems with parse data to right format," +
-                            " please choose other format or try again later", HttpStatus.BAD_REQUEST);
-                } catch (IllegalArgumentException e) {
-                    log.warn("Wrong result type entered:" + contextType, e);
-                    return new ResponseEntity("Wrong result type: " + contextType + ". Try json or xml", HttpStatus.NOT_FOUND);
-                } catch (IOException e) {
-                    log.warn("A request was made to display the weather by date and failed", e);
-                    return new ResponseEntity("Weather service failed: " + e.getMessage(), HttpStatus.BAD_REQUEST);
-                } catch (UnexpectedResponseException e) {
-                    log.warn("Response reading failed", e);
-                    return new ResponseEntity("Weather service response reading failed: " + e.getMessage() +
-                            ". Please try other service or try later", HttpStatus.BAD_REQUEST);
-                } catch (WrongLocationException e) {
-                    log.warn("Wrong location entered", e);
-                    return new ResponseEntity("Wrong location: " + location +
-                            "or this service cannot return weather data for this city. " +
-                            "Please try enter city at right format(Example: london,uk)", HttpStatus.NOT_FOUND);
-                }
-            }
+        if (ChronoUnit.DAYS.between(LocalDate.now(), formattedDate) > weatherService.getMaxNumberOfForecastDays()) {
+            log.info("Date in the distant future");
+            return new ResponseEntity("Date in the distant future: " + formattedDate +
+                    ".Please try date between current day and next" + weatherService.getMaxNumberOfForecastDays() +
+                    "days.", HttpStatus.NOT_FOUND);
         }
-        log.warn("Wrong service name: " + serviceName);
-        return new ResponseEntity("Wrong service name: " + serviceName +
-                ". Please try one of valid service name: " + weatherServiceList.toString(), HttpStatus.NOT_FOUND);
+
+        try {
+            Weather responseWeather = weatherService.getWeatherByDate(formattedDate, location);
+            String correctFormat = toRightFormat(responseWeather, contextType);
+            return toRightOutput(weatherService.getServiceName(), correctFormat, output, contextType);
+        } catch (JsonProcessingException e) {
+            log.warn("Unexpected problems with parse data to right format", e);
+            return new ResponseEntity("Unexpected problems with parse data to right format," +
+                    " please choose other format or try again later", HttpStatus.BAD_REQUEST);
+        } catch (IllegalArgumentException e) {
+            log.warn("Wrong result type entered:" + contextType, e);
+            return new ResponseEntity("Wrong result type: " + contextType + ". Try json or xml", HttpStatus.NOT_FOUND);
+        } catch (IOException e) {
+            log.warn("A request was made to display the weather by date and failed", e);
+            return new ResponseEntity("Weather service failed: " + e.getMessage(), HttpStatus.BAD_REQUEST);
+        } catch (UnexpectedResponseException e) {
+            log.warn("Response reading failed", e);
+            return new ResponseEntity("Weather service response reading failed: " + e.getMessage() +
+                    ". Please try other service or try later", HttpStatus.BAD_REQUEST);
+        } catch (WrongLocationException e) {
+            log.warn("Wrong location entered", e);
+            return new ResponseEntity("Wrong location: " + location +
+                    "or this service cannot return weather data for this city. " +
+                    "Please try enter city at right format(Example: london,uk)", HttpStatus.NOT_FOUND);
+        }
     }
 
     /**
@@ -284,5 +247,14 @@ public class WeatherController {
             log.warn("Wrong output type entered:" + output);
             return new ResponseEntity("Wrong output type: " + output + ". Try save or show", HttpStatus.NOT_FOUND);
         }
+    }
+
+    public static AsyncHttpClientConfig createConfig(int maxConnection, int requestTimeout, int connectionTimeout, int readTimeout) {
+        return new DefaultAsyncHttpClientConfig.Builder()
+                .setMaxConnections(maxConnection)
+                .setRequestTimeout(requestTimeout)
+                .setConnectTimeout(connectionTimeout)
+                .setReadTimeout(readTimeout)
+                .build();
     }
 }

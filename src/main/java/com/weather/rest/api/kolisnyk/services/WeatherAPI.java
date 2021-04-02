@@ -5,10 +5,8 @@ import com.weather.rest.api.kolisnyk.custom.exceptions.UnexpectedResponseExcepti
 import com.weather.rest.api.kolisnyk.custom.exceptions.WrongLocationException;
 import com.weather.rest.api.kolisnyk.model.CreateWeatherByService;
 import com.weather.rest.api.kolisnyk.model.Weather;
-import com.weather.rest.api.kolisnyk.model.WeatherAppProperties;
-import org.asynchttpclient.AsyncHttpClient;
-import org.asynchttpclient.DefaultAsyncHttpClient;
-import org.asynchttpclient.Response;
+import org.asynchttpclient.*;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
@@ -26,6 +24,19 @@ public class WeatherAPI implements WeatherService {
 
     private final static int MAX_FORECAST_DAYS = 2;
     public final static String SERVICE_NAME = "weatherAPI";
+
+    @Value("${weather.app.properties.weather-api-link}")
+    private String apiLink;
+    @Value("${weather.app.properties.api-key}")
+    private String apiKey;
+    @Value("${weather.app.properties.max-connection}")
+    private int maxConnection;
+    @Value("${weather.app.properties.request-timeout}")
+    private int requestTimeout;
+    @Value("${weather.app.properties.connection-timeout}")
+    private int connectionTimeout;
+    @Value("${weather.app.properties.read-timeout}")
+    private int readTimeout;
 
     @Override
     public String getServiceName() {
@@ -51,9 +62,11 @@ public class WeatherAPI implements WeatherService {
     @Override
     public Weather getCurrentWeather(String location) throws IOException, WrongLocationException, UnexpectedResponseException {
 
-        AsyncHttpClient client = new DefaultAsyncHttpClient(AbstractController.config);
-        Future<Response> fresp = client.prepareGet("https://weatherapi-com.p.rapidapi.com/current.json?q=" + location)
-                .setHeader("x-rapidapi-key", WeatherAppProperties.API_KEY)
+        AsyncHttpClient client = new DefaultAsyncHttpClient(
+                AbstractController.createConfig(maxConnection, requestTimeout, connectionTimeout, readTimeout)
+        );
+        Future<Response> fresp = client.prepareGet(apiLink + "/current.json?q=" + location)
+                .setHeader("x-rapidapi-key", apiKey)
                 .setHeader("x-rapidapi-host", "weatherapi-com.p.rapidapi.com")
                 .execute()
                 .toCompletableFuture();
@@ -82,9 +95,11 @@ public class WeatherAPI implements WeatherService {
     @Override
     public Weather getWeatherByDate(LocalDate dateTime, String location) throws IOException, WrongLocationException, UnexpectedResponseException {
 
-        AsyncHttpClient client = new DefaultAsyncHttpClient(AbstractController.config);
-        Future<Response> fresp = client.prepareGet("https://weatherapi-com.p.rapidapi.com/forecast.json?q=" + location + "&days=3")
-                .setHeader("x-rapidapi-key", WeatherAppProperties.API_KEY)
+        AsyncHttpClient client = new DefaultAsyncHttpClient(
+                AbstractController.createConfig(maxConnection, requestTimeout, connectionTimeout, readTimeout)
+        );
+        Future<Response> fresp = client.prepareGet(apiLink + "/forecast.json?q=" + location + "&days=3")
+                .setHeader("x-rapidapi-key", apiKey)
                 .setHeader("x-rapidapi-host", "weatherapi-com.p.rapidapi.com")
                 .execute()
                 .toCompletableFuture();
