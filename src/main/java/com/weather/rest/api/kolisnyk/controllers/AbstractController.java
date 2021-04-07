@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.xml.XmlMapper;
 import com.weather.rest.api.kolisnyk.custom.exceptions.UnexpectedResponseException;
 import com.weather.rest.api.kolisnyk.custom.exceptions.WrongLocationException;
+import com.weather.rest.api.kolisnyk.model.LocationByIPAddress;
 import com.weather.rest.api.kolisnyk.model.MSWordModel;
 import com.weather.rest.api.kolisnyk.model.Weather;
 import com.weather.rest.api.kolisnyk.services.WeatherService;
@@ -20,6 +21,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 
+import javax.servlet.http.HttpServletRequest;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.time.LocalDate;
@@ -59,12 +61,20 @@ public abstract class AbstractController {
 
     @RequestMapping(path = "/current-weather")
     public ResponseEntity<?> currentWeather(@RequestParam(value = "contextType", defaultValue = "json") String contextType,
-                                            @RequestParam(value = "location", defaultValue = "london,uk") String location,
-                                            @RequestParam(value = "output", defaultValue = "show") String output) {
+                                            @RequestParam(value = "location", defaultValue = "current") String location,
+                                            @RequestParam(value = "output", defaultValue = "show") String output,
+                                            HttpServletRequest request) {
+
+        String weatherLocation;
+        if ("current".equals(location)) {
+            weatherLocation = LocationByIPAddress.getCityByIP(request);
+        } else {
+            weatherLocation = location;
+        }
 
         log.info("A request was made to display the current weather");
         try {
-            Weather responseWeather = weatherService.getCurrentWeather(location);
+            Weather responseWeather = weatherService.getCurrentWeather(weatherLocation);
             String correctFormat = toRightFormat(responseWeather, contextType);
             return toRightOutput(weatherService.getServiceName(), correctFormat, output, contextType);
         } catch (JsonProcessingException e) {
@@ -84,7 +94,7 @@ public abstract class AbstractController {
                     ". Please try other service or try later", HttpStatus.BAD_REQUEST);
         } catch (WrongLocationException e) {
             log.warn("Wrong location entered", e);
-            return new ResponseEntity("Wrong location: " + location +
+            return new ResponseEntity("Wrong location: " + weatherLocation +
                     "or this service cannot return weather data for this city. " +
                     "Please try enter city at right format(Example: london,uk)", HttpStatus.NOT_FOUND);
         }
@@ -107,11 +117,19 @@ public abstract class AbstractController {
     @RequestMapping(path = "/weather-by-date")
     public ResponseEntity<?> weatherByDate(@RequestParam(value = "contextType", defaultValue = "json") String contextType,
                                            @RequestParam(value = "date", defaultValue = "current") String date,
-                                           @RequestParam(value = "location", defaultValue = "london,uk") String location,
-                                           @RequestParam(value = "output", defaultValue = "show") String output) {
+                                           @RequestParam(value = "location", defaultValue = "current") String location,
+                                           @RequestParam(value = "output", defaultValue = "show") String output,
+                                           HttpServletRequest request) {
 
         if ("current".equals(date)) {
-            return currentWeather(contextType, location, output);
+            return currentWeather(contextType, location, output, request);
+        }
+
+        String weatherLocation;
+        if ("current".equals(location)) {
+            weatherLocation = LocationByIPAddress.getCityByIP(request);
+        } else {
+            weatherLocation = location;
         }
 
         LocalDate formattedDate;
@@ -135,7 +153,7 @@ public abstract class AbstractController {
         }
 
         try {
-            Weather responseWeather = weatherService.getWeatherByDate(formattedDate, location);
+            Weather responseWeather = weatherService.getWeatherByDate(formattedDate, weatherLocation);
             String correctFormat = toRightFormat(responseWeather, contextType);
             return toRightOutput(weatherService.getServiceName(), correctFormat, output, contextType);
         } catch (JsonProcessingException e) {
@@ -154,7 +172,7 @@ public abstract class AbstractController {
                     ". Please try other service or try later", HttpStatus.BAD_REQUEST);
         } catch (WrongLocationException e) {
             log.warn("Wrong location entered", e);
-            return new ResponseEntity("Wrong location: " + location +
+            return new ResponseEntity("Wrong location: " + weatherLocation +
                     "or this service cannot return weather data for this city. " +
                     "Please try enter city at right format(Example: london,uk)", HttpStatus.NOT_FOUND);
         }
