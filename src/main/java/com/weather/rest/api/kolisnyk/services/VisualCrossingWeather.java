@@ -62,19 +62,17 @@ public class VisualCrossingWeather implements WeatherService {
     @Override
     public Weather getCurrentWeather(String location) throws IOException, WrongLocationException, UnexpectedResponseException {
 
-        AsyncHttpClient client = new DefaultAsyncHttpClient(
+        try (AsyncHttpClient client = new DefaultAsyncHttpClient(
                 AbstractController.createConfig(maxConnection, requestTimeout, connectionTimeout, readTimeout)
-        );
-        Future<Response> fresp = client.prepareGet(apiLink + "/forecast" +
-                "?location=" + location + "&aggregateHours=24&contentType=json&shortColumnNames=0&unitGroup=us")
-                .setHeader("x-rapidapi-key", apiKey)
-                .setHeader("x-rapidapi-host", "visual-crossing-weather.p.rapidapi.com")
-                .execute()
-                .toCompletableFuture();
+        )) {
+            Future<Response> fresp = client.prepareGet(apiLink + "/forecast" +
+                    "?location=" + location + "&aggregateHours=24&contentType=json&shortColumnNames=0&unitGroup=us")
+                    .setHeader("x-rapidapi-key", apiKey)
+                    .setHeader("x-rapidapi-host", "visual-crossing-weather.p.rapidapi.com")
+                    .execute()
+                    .toCompletableFuture();
 
-        try {
             Response resp = fresp.get();
-            client.close();
             return CreateWeatherByService.createCurrentWeatherFromVisualCrossing(resp.getResponseBody());
         } catch (InterruptedException | ExecutionException | IOException e) {
             throw new IOException("Retrieving data from rest api (" + getServiceName() + ") failed, please try another service", e);
@@ -96,19 +94,17 @@ public class VisualCrossingWeather implements WeatherService {
     @Override
     public Weather getWeatherByDate(LocalDate dateTime, String location) throws IOException, WrongLocationException, UnexpectedResponseException {
 
-        AsyncHttpClient client = new DefaultAsyncHttpClient(
+        try (AsyncHttpClient client = new DefaultAsyncHttpClient(
                 AbstractController.createConfig(maxConnection, requestTimeout, connectionTimeout, readTimeout)
-        );
-        Future<Response> fresp = client.prepareGet(apiLink + "/forecast" +
-                "?location=" + location + "&aggregateHours=24&contentType=json&shortColumnNames=0&unitGroup=us")
-                .setHeader("x-rapidapi-key", apiKey)
-                .setHeader("x-rapidapi-host", "visual-crossing-weather.p.rapidapi.com")
-                .execute()
-                .toCompletableFuture();
+        )) {
+            Future<Response> fresp = client.prepareGet(apiLink + "/forecast" +
+                    "?location=" + location + "&aggregateHours=24&contentType=json&shortColumnNames=0&unitGroup=us")
+                    .setHeader("x-rapidapi-key", apiKey)
+                    .setHeader("x-rapidapi-host", "visual-crossing-weather.p.rapidapi.com")
+                    .execute()
+                    .toCompletableFuture();
 
-        try {
             Response resp = fresp.get();
-            client.close();
             return CreateWeatherByService.createWeatherFromVisualCrossing(resp.getResponseBody(), dateTime);
         } catch (InterruptedException | ExecutionException | IOException e) {
             throw new IOException("Retrieving data from rest api (" + getServiceName() + ") failed, please try another service", e);

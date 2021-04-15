@@ -62,18 +62,16 @@ public class WeatherAPI implements WeatherService {
     @Override
     public Weather getCurrentWeather(String location) throws IOException, WrongLocationException, UnexpectedResponseException {
 
-        AsyncHttpClient client = new DefaultAsyncHttpClient(
+        try (AsyncHttpClient client = new DefaultAsyncHttpClient(
                 AbstractController.createConfig(maxConnection, requestTimeout, connectionTimeout, readTimeout)
-        );
-        Future<Response> fresp = client.prepareGet(apiLink + "/current.json?q=" + location)
-                .setHeader("x-rapidapi-key", apiKey)
-                .setHeader("x-rapidapi-host", "weatherapi-com.p.rapidapi.com")
-                .execute()
-                .toCompletableFuture();
+        )) {
+            Future<Response> fresp = client.prepareGet(apiLink + "/current.json?q=" + location)
+                    .setHeader("x-rapidapi-key", apiKey)
+                    .setHeader("x-rapidapi-host", "weatherapi-com.p.rapidapi.com")
+                    .execute()
+                    .toCompletableFuture();
 
-        try {
             Response resp = fresp.get();
-            client.close();
             return CreateWeatherByService.createCurrentWeatherFromWeatherAPI(resp.getResponseBody());
         } catch (InterruptedException | ExecutionException | IOException e) {
             throw new IOException("Retrieving data from rest api (" + getServiceName() + ") failed, please try another service", e);
@@ -95,18 +93,16 @@ public class WeatherAPI implements WeatherService {
     @Override
     public Weather getWeatherByDate(LocalDate dateTime, String location) throws IOException, WrongLocationException, UnexpectedResponseException {
 
-        AsyncHttpClient client = new DefaultAsyncHttpClient(
+        try (AsyncHttpClient client = new DefaultAsyncHttpClient(
                 AbstractController.createConfig(maxConnection, requestTimeout, connectionTimeout, readTimeout)
-        );
-        Future<Response> fresp = client.prepareGet(apiLink + "/forecast.json?q=" + location + "&days=3")
-                .setHeader("x-rapidapi-key", apiKey)
-                .setHeader("x-rapidapi-host", "weatherapi-com.p.rapidapi.com")
-                .execute()
-                .toCompletableFuture();
+        )) {
+            Future<Response> fresp = client.prepareGet(apiLink + "/forecast.json?q=" + location + "&days=3")
+                    .setHeader("x-rapidapi-key", apiKey)
+                    .setHeader("x-rapidapi-host", "weatherapi-com.p.rapidapi.com")
+                    .execute()
+                    .toCompletableFuture();
 
-        try {
             Response resp = fresp.get();
-            client.close();
             return CreateWeatherByService.createWeatherFromWeatherAPI(resp.getResponseBody(), dateTime);
         } catch (InterruptedException | ExecutionException | IOException e) {
             throw new IOException("Retrieving data from rest api (" + getServiceName() + ") failed, please try another service", e);

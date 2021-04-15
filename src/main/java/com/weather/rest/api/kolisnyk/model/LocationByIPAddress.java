@@ -62,18 +62,17 @@ public class LocationByIPAddress {
      * city from request
      *
      * @param request request with data for
-     * getting ip and city name
+     *                getting ip and city name
      * @return city name if it is possible to
      * get it from ip, otherwise it returns the
      * default city name
      */
 
     public static String getCityByIP(HttpServletRequest request) {
-        try {
-            String ip = getClientIp(request);
-            File database = new File(DB_PATH);
-            DatabaseReader dbReader = new DatabaseReader.Builder(database).build();
 
+        try (DatabaseReader dbReader = new DatabaseReader.Builder(new File(DB_PATH)).build()) {
+
+            String ip = getClientIp(request);
             InetAddress ipAddress = InetAddress.getByName(ip);
             CityResponse response = dbReader.city(ipAddress);
 

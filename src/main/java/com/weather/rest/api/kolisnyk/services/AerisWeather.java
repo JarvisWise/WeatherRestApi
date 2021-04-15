@@ -82,19 +82,18 @@ public class AerisWeather implements WeatherService {
 
         DateTimeFormatter formatterTimeWrite = DateTimeFormatter.ofPattern("yyyy-MM-dd");
         String localDateString = dateTime.format(formatterTimeWrite);
-        AsyncHttpClient client = new DefaultAsyncHttpClient(
-                AbstractController.createConfig(maxConnection, requestTimeout, connectionTimeout, readTimeout)
-        );
-        Future<Response> fresp = client.prepareGet(apiLink + "/forecasts/" +
-                location + "?from=" + localDateString + "&to=" + localDateString)
-                .setHeader("x-rapidapi-key", apiKey)
-                .setHeader("x-rapidapi-host", "aerisweather1.p.rapidapi.com")
-                .execute()
-                .toCompletableFuture();
 
-        try {
+        try (AsyncHttpClient client = new DefaultAsyncHttpClient(
+                AbstractController.createConfig(maxConnection, requestTimeout, connectionTimeout, readTimeout)
+        )) {
+            Future<Response> fresp = client.prepareGet(apiLink + "/forecasts/" +
+                    location + "?from=" + localDateString + "&to=" + localDateString)
+                    .setHeader("x-rapidapi-key", apiKey)
+                    .setHeader("x-rapidapi-host", "aerisweather1.p.rapidapi.com")
+                    .execute()
+                    .toCompletableFuture();
+
             Response resp = fresp.get();
-            client.close();
             return CreateWeatherByService.createWeatherFromAeris(resp.getResponseBody());
         } catch (InterruptedException | ExecutionException | IOException e) {
             throw new IOException("Retrieving data from rest api (" + getServiceName() + ") failed, please try another service", e);
