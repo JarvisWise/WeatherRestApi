@@ -11,13 +11,6 @@ import static com.weather.rest.api.kolisnyk.controllers.AerisWeatherController.N
 /**
  * Class AerisWeatherController is a controller
  * for service AerisWeather
- *
- * examples:
- * http://localhost:9345/aerisWeather/weather-by-date?location=kiev,ukr&date=2021-03-20&contextType=json&output=show
- * http://localhost:9345/aerisWeather/current-weather?location=kiev,ukr&contextType=xml
- * http://localhost:9345/aerisWeather/current-weather?location=kiev,ukr&contextType=xml&output=save
- * http://localhost:9345/aerisWeather/current-weather?location=kiev,ukr
- * http://localhost:9345/aerisWeather/current-weather?location=london,uk
  */
 
 @RestController
